@@ -35,6 +35,17 @@ module Solidus
         end
       end
 
+      class AndroidPayCard < Base
+        def to_hash
+          {
+            cc_type: "android_pay",
+            month: source.expiration_month,
+            year: source.expiration_year,
+            last_digits: source.source_description
+          }
+        end
+      end
+
       class NullRepresenter < Base
         def to_hash
           {}
