@@ -77,19 +77,7 @@ module Solidus
       if result.success?
         card = result.customer.payment_methods.last
         source.tap do |solidus_cc|
-          if card.is_a?(::Braintree::PayPalAccount)
-            solidus_cc.cc_type = 'paypal'
-            data = {
-              email: card.email
-            }
-            solidus_cc.data = data.to_json
-          else
-            solidus_cc.name = card.cardholder_name
-            solidus_cc.cc_type = CARD_TYPE_MAPPING[card.card_type]
-            solidus_cc.month = card.expiration_month
-            solidus_cc.year = card.expiration_year
-            solidus_cc.last_digits = card.last_4
-          end
+          solidus_cc.assign_attributes(PaymentMethodMapping.build(card).to_hash)
           solidus_cc.payment_method = self
           solidus_cc.gateway_customer_profile_id = result.customer.id
           solidus_cc.gateway_payment_profile_id = card.token
