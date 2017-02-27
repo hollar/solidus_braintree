@@ -64,6 +64,15 @@ module Solidus
         end
       end
 
+      class VenmoAccount < Base
+        def to_hash
+          {
+            cc_type: "venmo",
+            last_digits: source.source_description
+          }
+        end
+      end
+
       class NullRepresenter < Base
         def to_hash
           {}

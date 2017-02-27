@@ -384,6 +384,20 @@ describe Solidus::Gateway::BraintreeGateway, :vcr do
     end
   end
 
+  context "Venmo Account" do
+    let(:nonce) { Braintree::Test::Nonce::VenmoAccount }
+
+    it "should have the correct attributes" do
+      expect(card.user).to eq user
+      expect(card.payment_method).to eq payment_method
+      expect(card.cc_type).to eq "venmo"
+      expect(card.last_digits).to eq "Venmo Account: venmojoe"
+
+      expect(card.gateway_payment_profile_id).to be_present
+      expect(card.gateway_customer_profile_id).to be_present
+    end
+  end
+
   context 'PayPal' do
     let(:nonce){ Braintree::Test::Nonce::PayPalFuturePayment }
     it "should have the correct attributes" do
