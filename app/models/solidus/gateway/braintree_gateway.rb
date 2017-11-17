@@ -171,7 +171,11 @@ module Solidus
       elsif result.errors.count == 0 && result.credit_card_verification
         "Processor declined: #{result.credit_card_verification.processor_response_text} (#{result.credit_card_verification.processor_response_code})"
       elsif result.errors.count == 0 && result.transaction
-        result.transaction.status
+        if result.transaction.try(:status) == "processor_declined"
+          "Declined, Response ##{result.transaction.processor_response_code}: #{result.transaction.processor_settlement_response_text} #{result.transaction.additional_processor_response}"
+        else
+          result.transaction.status
+        end
       else
         result.errors.map { |e| "#{e.message} (#{e.code})" }.join(" ")
       end
