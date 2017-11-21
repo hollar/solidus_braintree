@@ -189,6 +189,28 @@ module Solidus
             code: result.transaction.avs_street_address_response_code
           }
         }
+      elsif result.transaction
+        {
+          status: result.transaction.status,
+          processor_response: {
+            code: result.transaction.processor_response_code,
+            text: result.transaction.processor_response_text,
+            additional_text: result.transaction.additional_processor_response
+          },
+          processor_settlement_response: {
+            code: result.transaction.processor_settlement_response_code,
+            text: result.transaction.processor_settlement_response_text,
+          },
+          gateway_rejection_reason: result.transaction.gateway_rejection_reason
+        }
+      elsif result.credit_card_verification
+        {
+          status: result.credit_card_verification.status,
+          processor_response: {
+            text: result.credit_card_verification.processor_response_text,
+            code: result.credit_card_verification.processor_response_code
+          }
+        }
       else
         {}
       end
