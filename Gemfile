@@ -1,8 +1,7 @@
 source 'https://rubygems.org'
 
 # Specify your gem's dependencies in solidus_braintree.gemspec
-branch = ENV.fetch('SOLIDUS_BRANCH', 'master')
-gem "solidus", github: "solidusio/solidus", branch: branch
+gem "solidus", github: "solidusio/solidus", tag: 'v1.2.2'
 
 gem 'pg'
 gem 'mysql2'

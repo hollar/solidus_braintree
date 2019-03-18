@@ -77,19 +77,7 @@ module Solidus
       if result.success?
         card = result.customer.payment_methods.last
         source.tap do |solidus_cc|
-          if card.is_a?(::Braintree::PayPalAccount)
-            solidus_cc.cc_type = 'paypal'
-            data = {
-              email: card.email
-            }
-            solidus_cc.data = data.to_json
-          else
-            solidus_cc.name = card.cardholder_name
-            solidus_cc.cc_type = CARD_TYPE_MAPPING[card.card_type]
-            solidus_cc.month = card.expiration_month
-            solidus_cc.year = card.expiration_year
-            solidus_cc.last_digits = card.last_4
-          end
+          solidus_cc.assign_attributes(PaymentMethodMapping.build(card).to_hash)
           solidus_cc.payment_method = self
           solidus_cc.gateway_customer_profile_id = result.customer.id
           solidus_cc.gateway_payment_profile_id = card.token
@@ -183,7 +171,11 @@ module Solidus
       elsif result.errors.count == 0 && result.credit_card_verification
         "Processor declined: #{result.credit_card_verification.processor_response_text} (#{result.credit_card_verification.processor_response_code})"
       elsif result.errors.count == 0 && result.transaction
-        result.transaction.status
+        if result.transaction.try(:status) == "processor_declined"
+          "Declined, Response ##{result.transaction.processor_response_code}: #{result.transaction.processor_settlement_response_text} #{result.transaction.additional_processor_response}"
+        else
+          result.transaction.status
+        end
       else
         result.errors.map { |e| "#{e.message} (#{e.code})" }.join(" ")
       end
@@ -195,6 +187,28 @@ module Solidus
           authorization: result.transaction.id,
           avs_result: {
             code: result.transaction.avs_street_address_response_code
+          }
+        }
+      elsif result.transaction
+        {
+          status: result.transaction.status,
+          processor_response: {
+            code: result.transaction.processor_response_code,
+            text: result.transaction.processor_response_text,
+            additional_text: result.transaction.additional_processor_response
+          },
+          processor_settlement_response: {
+            code: result.transaction.processor_settlement_response_code,
+            text: result.transaction.processor_settlement_response_text,
+          },
+          gateway_rejection_reason: result.transaction.gateway_rejection_reason
+        }
+      elsif result.credit_card_verification
+        {
+          status: result.credit_card_verification.status,
+          processor_response: {
+            text: result.credit_card_verification.processor_response_text,
+            code: result.credit_card_verification.processor_response_code
           }
         }
       else

@@ -288,6 +288,116 @@ describe Solidus::Gateway::BraintreeGateway, :vcr do
     end
   end
 
+  context 'Android Pay Card' do
+    let(:nonce) { Braintree::Test::Nonce::AndroidPayVisa }
+
+    it "should have the correct attributes" do
+      expect(card.user).to eq user
+      expect(card.payment_method).to eq payment_method
+      expect(card.cc_type).to eq 'android_pay'
+      expect(card.month).to eq '12'
+      expect(card.year).to eq '2025'
+      expect(card.last_digits).to eq 'Visa 1111'
+
+      expect(card.gateway_payment_profile_id).to be_present
+      expect(card.gateway_customer_profile_id).to be_present
+    end
+
+    it "succeeds authorization and capture" do
+      card.gateway_customer_profile_id = nil
+      auth = payment_method.authorize(5000, card, {})
+      expect(auth).to be_success
+      expect(auth.authorization).to be_present
+
+      capture = payment_method.capture(5000, auth.authorization, {})
+      expect(capture).to be_success
+      expect(capture.authorization).to be_present
+      expect(capture.avs_result["code"]).to eq "I"
+    end
+
+    it "succeeds purchase" do
+      card.gateway_customer_profile_id = nil
+      auth = payment_method.purchase(300, card, {})
+
+      expect(auth).to be_success
+      expect(auth.authorization).to be_present
+      expect(auth.avs_result["code"]).to eq "I"
+    end
+
+    context "with decline by processor" do
+      it "fails authorization" do
+        card.gateway_customer_profile_id = nil
+        auth = payment_method.authorize(200100, card, {})
+        expect(auth).to_not be_success
+        expect(auth.message).to eq "processor_declined"
+        expect(Spree::CreditCard.count).to eql(1)
+        expect(Spree::CreditCard.first.gateway_payment_profile_id).to be_present
+      end
+    end
+  end
+
+  context "Apple Pay Card" do
+    let(:nonce) { Braintree::Test::Nonce::ApplePayVisa }
+
+    it "should have the correct attributes" do
+      expect(card.user).to eq user
+      expect(card.payment_method).to eq payment_method
+      expect(card.cc_type).to eq "apple_pay_visa"
+      expect(card.month).to eq "12"
+      expect(card.year).to eq "2020"
+      expect(card.last_digits).to eq "Visa 8886"
+
+      expect(card.gateway_payment_profile_id).to be_present
+      expect(card.gateway_customer_profile_id).to be_present
+    end
+
+    it "succeeds authorization and capture" do
+      card.gateway_customer_profile_id = nil
+      auth = payment_method.authorize(5000, card, {})
+      expect(auth).to be_success
+      expect(auth.authorization).to be_present
+
+      capture = payment_method.capture(5000, auth.authorization, {})
+      expect(capture).to be_success
+      expect(capture.authorization).to be_present
+      expect(capture.avs_result["code"]).to eq "M"
+    end
+
+    it "succeeds purchase" do
+      card.gateway_customer_profile_id = nil
+      auth = payment_method.purchase(300, card, {})
+
+      expect(auth).to be_success
+      expect(auth.authorization).to be_present
+      expect(auth.avs_result["code"]).to eq "M"
+    end
+
+    context "with decline by processor" do
+      it "fails authorization" do
+        card.gateway_customer_profile_id = nil
+        auth = payment_method.authorize(200100, card, {})
+        expect(auth).to_not be_success
+        expect(auth.message).to eq "processor_declined"
+        expect(Spree::CreditCard.count).to eql(1)
+        expect(Spree::CreditCard.first.gateway_payment_profile_id).to be_present
+      end
+    end
+  end
+
+  context "Venmo Account" do
+    let(:nonce) { Braintree::Test::Nonce::VenmoAccount }
+
+    it "should have the correct attributes" do
+      expect(card.user).to eq user
+      expect(card.payment_method).to eq payment_method
+      expect(card.cc_type).to eq "venmo"
+      expect(card.last_digits).to eq "Venmo Account: venmojoe"
+
+      expect(card.gateway_payment_profile_id).to be_present
+      expect(card.gateway_customer_profile_id).to be_present
+    end
+  end
+
   context 'PayPal' do
     let(:nonce){ Braintree::Test::Nonce::PayPalFuturePayment }
     it "should have the correct attributes" do
